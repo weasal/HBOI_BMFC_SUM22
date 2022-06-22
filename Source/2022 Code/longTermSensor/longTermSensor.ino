@@ -3,6 +3,8 @@
  * As such, low power consumption was paramount.  Due to the remote deployment of these devices, data logging in a standard format was also
  * an important decision.  The Arduino is currently programmed to produce a CSV file which will allow easy integration Excel and other spreadsheet programs.
  * This file is saved to a Micro-SD card.  In addition to the Pro Micro, a DS3234 RTC and Transflash/MicroSD card breakout were used.
+ * Pieces of code where used from Sparkfun for their libraries and Lim Phang Moh on the Rocket Scream Forum for the USB detachment and reattachment code
+ * 
  */
 
 //Libraries
@@ -17,7 +19,7 @@
 #define SD_CARD_CS_PIN 4//Configures SD card slot to be Slave Selected by pin 4
 
 // Declaration of Variables
-int voltCathode =A0;//Sets to for reading the Fuel Cell Voltage to A0
+int voltCathode = A0;//Sets to for reading the Fuel Cell Voltage to A0
 int presVoltage = 0;//Holds ADC measuremnt value
 int calculatedVolt;//Holds calculated Voltage Value
 String currentFile="data"+String(rtc.hour())+"_"+String(rtc.day())+"_"+String(rtc.month())+"_"+String(rtc.year())+".csv";//Generates file name for use during this sampling time
@@ -55,6 +57,7 @@ void loop()
   //Notification LED
     TXLED1;//Primarily used for notifying user that the Arduino is active, will be disabled in deployment to save power
     delay(10000);//Used to ensure PC can connect without needing to enter bootloading mode, comment out for deployment
+  
   //Data Collection
     presVoltage=analogRead(voltCathode);//Returns the ADC value from Analog Input
     calculatedVolt=presVoltage*(3300/1024)*1.07527;//Calculates the actual Voltage, using the max voltage divided by number of steps and an calibration offset
@@ -66,11 +69,13 @@ void loop()
     printTime(dataFile);//Prints Time from RTC
     dataFile.println(calculatedVolt);//Prints Voltage from fuel cells
     dataFile.close();//Closes file
+    
   //Debugging/Troubleshooting
     //Following Code is used to verify operation of RTC and Voltmeter when connected serially, not used in operation
     //Serial.print("Here is your voltage(mV):");
     //Serial.println(calculatedVolt);
     //Serial.println(String(rtc.hour())+":"+String(rtc.minute())+":"+String(rtc.second()));
+    
   //Notification LED    
     TXLED0;
 }
