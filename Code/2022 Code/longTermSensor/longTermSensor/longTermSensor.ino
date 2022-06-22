@@ -1,46 +1,73 @@
 
 
 //Libraries
-//#include <LowPower.h>//Low Power Library; Be careful on USB based Arduino to properly activate USB
+#include <LowPower.h>//Low Power Library; Be careful on USB based Arduino to properly activate USB
 #include <SPI.h>//Library for SPI, allows communication between components
 #include <SparkFunDS3234RTC.h>//Library for Real Time Clock
 #include <SD.h>//Library for SD card
 
-//Declartion to put Date in US standard form
-#define PRINT_USA_DATE
-#define DS13074_CS_PIN 10
+//Definitions
+#define PRINT_USA_DATE//Configures RTC to follow US "middle-endian" date format
+#define DS13074_CS_PIN 10//Configures RTC to be Slave Selected by pin 10
+#define SD_CARD_CS_PIN 4//Configures SD card slot to be Slave Selected by pin 4
+
 // Declaration of Variables
-int voltCathode =A0;
-int presVoltage = 0;
-int calculatedVolt;
-String currentFile="data"+String(rtc.hour())+"_"+String(rtc.day())+"_"+String(rtc.month())+"_"+String(rtc.year())+".txt";
+int voltCathode =A0;//Sets to for reading the Fuel Cell Voltage to A0
+int presVoltage = 0;//Holds ADC measuremnt value
+int calculatedVolt;//Holds calculated Voltage Value
+String currentFile="data"+String(rtc.hour())+"_"+String(rtc.day())+"_"+String(rtc.month())+"_"+String(rtc.year())+".txt";//Generates file name for use during this sampling time
+
+
 void setup()
 {
-delay(10000);
-rtc.begin(DS13074_CS_PIN);
-rtc.autoTime();
-Serial.begin(9600);
-SD.begin();
-File dataFile = SD.open(currentFile);
-dataFile.println("Timestamp, Voltage(mV)");
-dataFile.close();
+  //RTC Configuration    
+    rtc.begin(DS13074_CS_PIN);//Begins RTC
+    //rtc.autoTime();//Uncomment to have RTC pull data from Compilation time
+    
+  //Serial Configuration
+    Serial.begin(9600);//Begins Serial Communication at 9600 Baud
+    
+  //SD configuration
+    SD.begin(SD_CARD_CS_PIN);//Starts SD card
+    File dataFile = SD.open(currentFile);//Creates or Opens File for Datalogging
+    dataFile.println("Timestamp, Voltage(mV)");//Writes simple CSV header
+    dataFile.close();//Closes SD card file
 }
 
 void loop() 
 {
-  presVoltage=analogRead(voltCathode);
-  calculatedVolt=presVoltage*(3300/1024)*1.07527;
-  rtc.update();
-  File dataFile=SD.open(currentFile);
-  printTime(dataFile);
-  dataFile.println(calculatedVolt);
-  dataFile.close();
-Serial.print("Here is your voltage(mV):");
-Serial.println(calculatedVolt);
-delay(3000);
- // USBCON = 0;
-  //LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF); 
- // USBDevice.attach();
+  //Sleep Mode Configuration
+   //Configures USB port to shutdown properly
+    USBCON |= _BV(FRZCLK);// Disable USB clock 
+    PLLCSR &= ~_BV(PLLE);// Disable USB PLL
+    USBCON &= ~_BV(USBE);// Disable USB
+   //LowPower Library
+    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);//Set the Arduino to sleep with ADC off and Black Out Detection off to maximise power efficiency
+    //Should be changed to be interrupt driven off of RTC, but currently just sleeps for 8 seconds 
+   //Restore USB functionality to Arduino 
+    USBDevice.attach(); //Reattaches USB
+    
+  //Notification LED
+    TXLED1;//Primarily used for notifying user that the Arduino is active, will be disabled in deployment to save power
+    delay(10000);//Used to ensure PC can connect without needing to enter bootloading mode, comment out for deployment
+  //Data Collection
+    presVoltage=analogRead(voltCathode);//Returns the ADC value from Analog Input
+    calculatedVolt=presVoltage*(3300/1024)*1.07527;//Calculates the actual Voltage, using the max voltage divided by number of steps and an calibration offset
+    //While there is likely a better method to calibrate the voltmeter than a hard coded multiplier, since the primary purpose is to track trends, precise voltage measurements are secondary to ease of use and power efficiency
+    rtc.update();//Pulls time data from RTC
+  
+  //Data Logging
+    File dataFile=SD.open(currentFile);//Opens file created in Setup
+    printTime(dataFile);//Prints Time from RTC
+    dataFile.println(calculatedVolt);//Prints Voltage from fuel cells
+    dataFile.close();//Closes file
+  //Debugging/Troubleshooting
+    //Following Code is used to verify operation of RTC and Voltmeter when connected serially, not used in operation
+    //Serial.print("Here is your voltage(mV):");
+    //Serial.println(calculatedVolt);
+    //Serial.println(String(rtc.hour())+":"+String(rtc.minute())+":"+String(rtc.second()));
+  //Notification LED    
+    TXLED0;
 }
 
 void printTime(File currentFile)
