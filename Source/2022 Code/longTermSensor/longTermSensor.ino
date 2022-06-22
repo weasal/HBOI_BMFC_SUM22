@@ -1,4 +1,9 @@
-
+/*
+ * This code powers an Arduino Pro Micro based Longterm Sensor.  It is designed to be powered primarily by a Benthic Microbial Fuel Cell.
+ * As such, low power consumption was paramount.  Due to the remote deployment of these devices, data logging in a standard format was also
+ * an important decision.  The Arduino is currently programmed to produce a CSV file which will allow easy integration Excel and other spreadsheet programs.
+ * This file is saved to a Micro-SD card.  In addition to the Pro Micro, a DS3234 RTC and Transflash/MicroSD card breakout were used.
+ */
 
 //Libraries
 #include <LowPower.h>//Low Power Library; Be careful on USB based Arduino to properly activate USB
@@ -15,7 +20,7 @@
 int voltCathode =A0;//Sets to for reading the Fuel Cell Voltage to A0
 int presVoltage = 0;//Holds ADC measuremnt value
 int calculatedVolt;//Holds calculated Voltage Value
-String currentFile="data"+String(rtc.hour())+"_"+String(rtc.day())+"_"+String(rtc.month())+"_"+String(rtc.year())+".txt";//Generates file name for use during this sampling time
+String currentFile="data"+String(rtc.hour())+"_"+String(rtc.day())+"_"+String(rtc.month())+"_"+String(rtc.year())+".csv";//Generates file name for use during this sampling time
 
 
 void setup()
