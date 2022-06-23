@@ -72,10 +72,10 @@ void loop()
     
   //Debugging/Troubleshooting
     //Following Code is used to verify operation of RTC and Voltmeter when connected serially, not used in operation
-    //Serial.print("Here is your voltage(mV):");
-    //Serial.println(calculatedVolt);
-    //Serial.println(String(rtc.hour())+":"+String(rtc.minute())+":"+String(rtc.second()));
-    
+    Serial.println(String(rtc.hour())+":"+String(rtc.minute())+":"+String(rtc.second()));
+    Serial.print("Here is your voltage(mV):");
+    Serial.println(calculatedVolt);
+    delay(10);
   //Notification LED    
     TXLED0;
 }
