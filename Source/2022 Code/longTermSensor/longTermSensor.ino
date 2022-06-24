@@ -76,6 +76,11 @@ void loop()
     Serial.print("Here is your voltage(mV):");
     Serial.println(calculatedVolt);
     delay(10);
+  //Handling File Size
+  if (dataFile.size()>10000000)
+  {
+    String currentFile="data"+String(rtc.hour())+"_"+String(rtc.day())+"_"+String(rtc.month())+"_"+String(rtc.year())+".csv";//Creates new file name if datafile exceeds 10 MB
+  }
   //Notification LED    
     TXLED0;
 }
