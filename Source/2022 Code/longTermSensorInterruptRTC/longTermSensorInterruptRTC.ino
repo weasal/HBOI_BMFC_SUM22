@@ -8,7 +8,7 @@
  */
 
 //Libraries
-#include <LowPower.h>//Low Power Library; Be careful on USB based Arduino to properly activate USB
+//#include <LowPower.h>//Low Power Library; Be careful on USB based Arduino to properly activate USB
 #include <SPI.h>//Library for SPI, allows communication between components
 #include <SparkFunDS3234RTC.h>//Library for Real Time Clock
 #include <SD.h>//Library for SD card
@@ -22,7 +22,7 @@
 int voltCathode = A0;//Sets to for reading the Fuel Cell Voltage to A0
 int presVoltage = 0;//Holds ADC measuremnt value
 int calculatedVolt;//Holds calculated Voltage Value
-String currentFile="data"+String(rtc.hour())+"_"+String(rtc.day())+"_"+String(rtc.month())+"_"+String(rtc.year())+".csv";//Generates file name for use during this sampling time
+//String currentFile="data"+String(rtc.hour())+"_"+String(rtc.day())+"_"+String(rtc.month())+"_"+String(rtc.year())+".csv";//Generates file name for use during this sampling time
 
 void wake()
 {
@@ -31,42 +31,56 @@ void wake()
 void setup()
 {
   // Interrupt Creation
-    pinMode(RTC_WAKEUP_PIN,INPUT_PULLUP);
+   // pinMode(RTC_WAKEUP_PIN,INPUT_PULLUP);
   //RTC Configuration    
     rtc.begin(DS13074_CS_PIN);//Begins RTC
     //rtc.autoTime();//Uncomment to have RTC pull data from Compilation time
-    rtc.enableAlarmInterrupt(1,1);
-     rtc.setAlarm1(30);
+//    rtc.writeSQW(0);
+//    rtc.enableAlarmInterrupt(1,1);
+//    rtc.setAlarm1(30);
   //Serial Configuration
     Serial.begin(9600);//Begins Serial Communication at 9600 Baud
     
   //SD configuration
     SD.begin(SD_CARD_CS_PIN);//Starts SD card
-    File dataFile = SD.open(currentFile);//Creates or Opens File for Datalogging
+     while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+
+
+  Serial.print("Initializing SD card...");
+
+  // see if the card is present and can be initialized:
+  if (!SD.begin(SD_CARD_CS_PIN)) {
+    Serial.println("Card failed, or not present");
+    // don't do anything more:
+    while (1);
+  }
+  Serial.println("card initialized.");
+    File dataFile = SD.open("voltageData.csv", FILE_WRITE);//Creates or Opens File for Datalogging
     dataFile.println("Timestamp, Voltage(mV)");//Writes simple CSV header
-    dataFile.close();//Closes SD card file
-}
+    dataFile.close();
+    }
 
 void loop() 
 {
-  attachInterrupt(digitalPinToInterrupt(RTC_WAKEUP_PIN), wake, LOW);
- 
-  
+  //attachInterrupt(digitalPinToInterrupt(RTC_WAKEUP_PIN), wake, LOW);
+   
   //Sleep Mode Configuration
    //Configures USB port to shutdown properly
-    USBCON |= _BV(FRZCLK);// Disable USB clock 
-    PLLCSR &= ~_BV(PLLE);// Disable USB PLL
-    USBCON &= ~_BV(USBE);// Disable USB
+    //USBCON |= _BV(FRZCLK);// Disable USB clock 
+    //PLLCSR &= ~_BV(PLLE);// Disable USB PLL
+    //USBCON &= ~_BV(USBE);// Disable USB
    //LowPower Library
-    LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);//Set the Arduino to sleep with ADC off and Black Out Detection off to maximise power efficiency
-    detachInterrupt(digitalPinToInterrupt(RTC_WAKEUP_PIN));
+    //LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);//Set the Arduino to sleep with ADC off and Black Out Detection off to maximise power efficiency
+    //detachInterrupt(digitalPinToInterrupt(RTC_WAKEUP_PIN));
     //Should be changed to be interrupt driven off of RTC, but currently just sleeps for 8 seconds 
    //Restore USB functionality to Arduino 
-    USBDevice.attach(); //Reattaches USB
+    //USBDevice.attach(); //Reattaches USB
     
   //Notification LED
     TXLED1;//Primarily used for notifying user that the Arduino is active, will be disabled in deployment to save power
-    delay(10000);//Used to ensure PC can connect without needing to enter bootloading mode, comment out for deployment
+    //delay(1000);//Used to ensure PC can connect without needing to enter bootloading mode, comment out for deployment
   
   //Data Collection
     presVoltage=analogRead(voltCathode);//Returns the ADC value from Analog Input
@@ -75,7 +89,18 @@ void loop()
     rtc.update();//Pulls time data from RTC
   
   //Data Logging
-    File dataFile=SD.open(currentFile);//Opens file created in Setup
+    File dataFile=SD.open("voltageData.csv", FILE_WRITE);//Opens file created in Setup
+    {
+  if (dataFile) {
+    dataFile.println("hi");
+    dataFile.close();
+    // print to the serial port too:
+    Serial.println("hi");
+  }
+  // if the file isn't open, pop up an error:
+  else {
+    Serial.println("error opening datalog.txt");
+  }
     printTime(dataFile);//Prints Time from RTC
     dataFile.println(calculatedVolt);//Prints Voltage from fuel cells
     dataFile.close();//Closes file
@@ -93,7 +118,8 @@ void loop()
   }
   //Notification LED    
     TXLED0;
-    rtc.setAlarm1(30);
+    //rtc.setAlarm1(30);
+}
 }
 
 void printTime(File currentFile)
